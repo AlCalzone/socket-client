@@ -20,13 +20,13 @@ export interface IOListenEvents {
 	permissionError: (error: any) => void; // TODO: check ioBroker.admin/lib/socket.js for the shape of this
 }
 
-export type GenericCallback<T> = ErrorAsString<ioBroker.GenericCallback<T>>;
-export type ErrorCallback = ErrorAsString<ioBroker.ErrorCallback>;
+type GenericCallback<T> = ErrorAsString<ioBroker.GenericCallback<T>>;
+type ErrorCallback = ErrorAsString<ioBroker.ErrorCallback>;
 
-export type AuthenticateCallback = (isOk: boolean, isSecure: boolean) => void;
-export type AuthEnabledCallback = (isSecure: boolean, user: string) => void;
+type AuthenticateCallback = (isOk: boolean, isSecure: boolean) => void;
+type AuthEnabledCallback = (isSecure: boolean, user: string) => void;
 export type GetUserPermissionsCallback = (err?: string, acl?: any) => void;
-export type ErrorAsString<T extends (...args: any[]) => void> = T extends (
+type ErrorAsString<T extends (...args: any[]) => void> = T extends (
 	err: Error | null,
 	...args: infer U
 ) => void
@@ -35,29 +35,26 @@ export type ErrorAsString<T extends (...args: any[]) => void> = T extends (
 	? (err: string | null | undefined, ...args: U) => void
 	: never;
 
-export type GetBinaryStateCallback = (
+type GetBinaryStateCallback = (
 	err?: string | null,
 	stateBase64?: string,
 ) => void;
-export type ReadFile64Callback = (err?: string | null, file?: string) => void;
+type ReadFile64Callback = (err?: string | null, file?: string) => void;
 
-export type GetVersionCallback = (
+type GetVersionCallback = (
 	err?: string | null,
 	version?: string,
 	serverName?: string,
 ) => void;
 
-export type GetAdapterNameCallback = (
+type GetAdapterNameCallback = (
 	err?: string | null,
 	serverName?: string,
 ) => void;
 
-export type GetHostByIPCallback = (
-	ip: string,
-	host: ioBroker.HostObject,
-) => void;
+type GetHostByIPCallback = (ip: string, host: ioBroker.HostObject) => void;
 
-export type GenericCallbackNoExtraError<T> = (
+type GenericCallbackNoExtraError<T> = (
 	result?: ERRORS.PERMISSION_ERROR | T,
 ) => void;
 
@@ -113,7 +110,7 @@ export type CompactHost = {
 	};
 };
 
-export interface LogFile {
+export interface Logfile {
 	fileName: string;
 	size: number;
 }
@@ -349,5 +346,5 @@ export interface AdminEmitEvents {
 	): void;
 	getCompactHosts(callback: GenericCallback<CompactHost[]>): void;
 
-	readLogs(host: string, callback: GenericCallback<LogFile[]>): void;
+	readLogs(host: string, callback: GenericCallback<Logfile[]>): void;
 }

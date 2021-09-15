@@ -1,4 +1,4 @@
-import { Connection, ERRORS, RequestOptions } from "./Connection";
+import { Connection, ERRORS } from "./Connection";
 import type { ConnectionProps } from "./ConnectionProps";
 import type {
 	AdminEmitEvents,
@@ -8,7 +8,7 @@ import type {
 	CompactInstalledInfo,
 	CompactInstanceInfo,
 	CompactRepository,
-	LogFile,
+	Logfile,
 } from "./SocketEvents";
 import {
 	getObjectViewResultToArray,
@@ -21,7 +21,7 @@ interface Certificate {
 	type: "public" | "private" | "chained";
 }
 
-function parseCertificate(name: string, cert: string): Certificate | void {
+function parseCertificate(name: string, cert: string): Certificate | undefined {
 	if (!cert) return;
 
 	let type: Certificate["type"];
@@ -40,7 +40,7 @@ function parseCertificate(name: string, cert: string): Certificate | void {
 			type = "public";
 		} else {
 			// TODO: is this correct?
-			return;
+			return undefined;
 		}
 	} else {
 		type =
@@ -63,7 +63,7 @@ function parseCertificate(name: string, cert: string): Certificate | void {
 	return { name, type };
 }
 
-export interface IPAddress {
+interface IPAddress {
 	name: string;
 	address: string;
 	family: "ipv4" | "ipv6";
@@ -114,18 +114,12 @@ function parseIPAddresses(host: ioBroker.HostObject): IPAddresses {
 	}
 	return { IPs4, IPs6 };
 }
-
 export class AdminConnection extends Connection<
 	AdminListenEvents,
 	AdminEmitEvents
 > {
 	constructor(props: ConnectionProps) {
 		super(props);
-	}
-
-	// We overload the request method here because the admin connection's methods all have `requireAdmin: true`
-	protected request<T>(options: RequestOptions<T>): Promise<T> {
-		return super.request<T>({ requireAdmin: true, ...options });
 	}
 
 	/**
@@ -138,6 +132,7 @@ export class AdminConnection extends Connection<
 			forceUpdate: update,
 			// TODO: check if this should time out
 			commandTimeout: false,
+			requireAdmin: true,
 			executor: async (resolve) => {
 				const obj = await this.getObject("system.certificates");
 				if (obj?.native?.certificates) {
@@ -162,6 +157,7 @@ export class AdminConnection extends Connection<
 		return this.request({
 			// TODO: check if this should time out
 			commandTimeout: false,
+			requireAdmin: true,
 			executor: (resolve) => {
 				this._socket.emit(
 					"sendToHost",
@@ -179,10 +175,11 @@ export class AdminConnection extends Connection<
 	/**
 	 * Get the log files (only for admin connection).
 	 */
-	getLogsFiles(host: string): Promise<LogFile[]> {
+	getLogsFiles(host: string): Promise<Logfile[]> {
 		return this.request({
 			// TODO: check if this should time out
 			commandTimeout: false,
+			requireAdmin: true,
 			executor: (resolve, reject) => {
 				this._socket.emit("readLogs", host, (err, files) => {
 					if (err) reject(err);
@@ -199,6 +196,7 @@ export class AdminConnection extends Connection<
 		return this.request({
 			// TODO: check if this should time out
 			commandTimeout: false,
+			requireAdmin: true,
 			executor: (resolve, reject) => {
 				this._socket.emit(
 					"sendToHost",
@@ -223,6 +221,7 @@ export class AdminConnection extends Connection<
 		return this.request({
 			// TODO: check if this should time out
 			commandTimeout: false,
+			requireAdmin: true,
 			executor: (resolve, reject) => {
 				this._socket.emit("deleteFile", adapter, fileName, (err) => {
 					if (err) reject(err);
@@ -241,6 +240,7 @@ export class AdminConnection extends Connection<
 		return this.request({
 			// TODO: check if this should time out
 			commandTimeout: false,
+			requireAdmin: true,
 			executor: (resolve, reject) => {
 				this._socket.emit(
 					"deleteFolder",
@@ -265,6 +265,7 @@ export class AdminConnection extends Connection<
 			forceUpdate: update,
 			// TODO: check if this should time out
 			commandTimeout: false,
+			requireAdmin: true,
 			executor: (resolve, reject) => {
 				this._socket.emit(
 					"getObjectView",
@@ -297,6 +298,7 @@ export class AdminConnection extends Connection<
 			forceUpdate: update,
 			// TODO: check if this should time out
 			commandTimeout: false,
+			requireAdmin: true,
 			executor: (resolve, reject) => {
 				this._socket.emit(
 					"getObjectView",
@@ -329,6 +331,7 @@ export class AdminConnection extends Connection<
 			forceUpdate: update,
 			// TODO: check if this should time out
 			commandTimeout: false,
+			requireAdmin: true,
 			executor: (resolve, reject) => {
 				this._socket.emit(
 					"getObjectView",
@@ -368,6 +371,7 @@ export class AdminConnection extends Connection<
 		return this.request({
 			// TODO: check if this should time out
 			commandTimeout: false,
+			requireAdmin: true,
 			executor: async (resolve) => {
 				const groups = await this.getGroups(true);
 				// renaming a group happens by re-creating the object under a different ID
@@ -420,6 +424,7 @@ export class AdminConnection extends Connection<
 			cacheKey: `hostInfo_${host}`,
 			forceUpdate: update,
 			commandTimeout: timeoutMs,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
 					"sendToHost",
@@ -458,6 +463,7 @@ export class AdminConnection extends Connection<
 			cacheKey: `hostInfoShort_${host}`,
 			forceUpdate: update,
 			commandTimeout: timeoutMs,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
 					"sendToHost",
@@ -497,6 +503,7 @@ export class AdminConnection extends Connection<
 			cacheKey: "repo",
 			forceUpdate: update,
 			commandTimeout: timeoutMs,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
 					"sendToHost",
@@ -536,6 +543,7 @@ export class AdminConnection extends Connection<
 			cacheKey: "repo",
 			forceUpdate: update,
 			commandTimeout: cmdTimeout,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
 					"sendToHost",
@@ -573,6 +581,7 @@ export class AdminConnection extends Connection<
 	): Promise<void> {
 		return this.request({
 			commandTimeout: cmdTimeout,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				host = normalizeHostId(host);
 
@@ -596,6 +605,7 @@ export class AdminConnection extends Connection<
 		host = objectIdToHostname(host);
 
 		return this.request({
+			requireAdmin: true,
 			requireFeatures: ["CONTROLLER_READWRITE_BASE_SETTINGS"],
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
@@ -630,6 +640,7 @@ export class AdminConnection extends Connection<
 		host = objectIdToHostname(host);
 
 		return this.request({
+			requireAdmin: true,
 			requireFeatures: ["CONTROLLER_READWRITE_BASE_SETTINGS"],
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
@@ -663,6 +674,7 @@ export class AdminConnection extends Connection<
 		host = objectIdToHostname(host);
 
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
 					"sendToHost",
@@ -690,6 +702,7 @@ export class AdminConnection extends Connection<
 		host = objectIdToHostname(host);
 
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
 					"sendToHost",
@@ -713,6 +726,7 @@ export class AdminConnection extends Connection<
 	 */
 	changePassword(user: string, password: string): Promise<void> {
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("changePassword", user, password, (err) => {
 					if (timeout.elapsed) return;
@@ -736,6 +750,7 @@ export class AdminConnection extends Connection<
 			forceUpdate: update,
 			// TODO: check if this should time out
 			commandTimeout: false,
+			requireAdmin: true,
 			executor: async (resolve) => {
 				const obj = await this.getObject(host);
 				resolve(obj?.common.address ?? []);
@@ -748,13 +763,14 @@ export class AdminConnection extends Connection<
 	 * @param ipOrHostName
 	 * @param update Force update.
 	 */
-	getHostByIp(ipOrHostName: string, update?: boolean): Promise<IPAddress[]> {
+	getHostByIp(ipOrHostName: string, update?: boolean): Promise<any> {
 		// Make sure we deal with a hostname, not an object ID
 		ipOrHostName = objectIdToHostname(ipOrHostName);
 
 		return this.request({
 			cacheKey: `rIPs_${ipOrHostName}`,
 			forceUpdate: update,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("getHostByIp", ipOrHostName, (ip, host) => {
 					if (timeout.elapsed) return;
@@ -773,6 +789,7 @@ export class AdminConnection extends Connection<
 	 */
 	encrypt(plaintext: string): Promise<string> {
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("encrypt", plaintext, (err, ciphertext) => {
 					if (timeout.elapsed) return;
@@ -790,6 +807,7 @@ export class AdminConnection extends Connection<
 	 */
 	decrypt(ciphertext: string): Promise<string> {
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("decrypt", ciphertext, (err, plaintext) => {
 					if (timeout.elapsed) return;
@@ -813,6 +831,7 @@ export class AdminConnection extends Connection<
 		options?: { mode: number | string },
 	): Promise<ioBroker.ChownFileResult[]> {
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
 					"chmodFile",
@@ -842,6 +861,7 @@ export class AdminConnection extends Connection<
 		options?: { owner: string; ownerGroup: string },
 	): Promise<ioBroker.ChownFileResult[]> {
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
 					"chownFile",
@@ -866,6 +886,7 @@ export class AdminConnection extends Connection<
 	 */
 	getNotifications(host: string, category: string): Promise<any> {
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
 					"sendToHost",
@@ -889,6 +910,7 @@ export class AdminConnection extends Connection<
 	 */
 	clearNotifications(host: string, category: string): Promise<any> {
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
 					"sendToHost",
@@ -910,6 +932,7 @@ export class AdminConnection extends Connection<
 	 */
 	getIsEasyModeStrict(): Promise<boolean> {
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("getIsEasyModeStrict", (err, isStrict) => {
 					if (timeout.elapsed) return;
@@ -926,6 +949,7 @@ export class AdminConnection extends Connection<
 	 */
 	getEasyMode(): Promise<any> {
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("getEasyMode", (err, config) => {
 					if (timeout.elapsed) return;
@@ -942,6 +966,7 @@ export class AdminConnection extends Connection<
 	 */
 	getRatings(update?: boolean): Promise<any> {
 		return this.request({
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("getRatings", !!update, (err, ratings) => {
 					if (timeout.elapsed) return;
@@ -957,6 +982,7 @@ export class AdminConnection extends Connection<
 		const controller = new AbortController();
 
 		return this.request({
+			requireAdmin: true,
 			commandTimeout: cmdTimeout || 5000,
 			onTimeout: () => {
 				controller.abort();
@@ -982,6 +1008,7 @@ export class AdminConnection extends Connection<
 	getCurrentInstance(): Promise<string> {
 		return this.request({
 			cacheKey: "currentInstance",
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("getCurrentInstance", (err, namespace) => {
 					if (timeout.elapsed) return;
@@ -1015,6 +1042,7 @@ export class AdminConnection extends Connection<
 		return this.request({
 			cacheKey: `instances_${adapter}`,
 			forceUpdate: update,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit(
 					"getAdapterInstances",
@@ -1052,6 +1080,7 @@ export class AdminConnection extends Connection<
 		return this.request({
 			cacheKey: `adapter_${adapter}`,
 			forceUpdate: update,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("getAdapters", adapter, (err, adapters) => {
 					if (timeout.elapsed) return;
@@ -1070,6 +1099,7 @@ export class AdminConnection extends Connection<
 		return this.request({
 			cacheKey: "compactAdapters",
 			forceUpdate: update,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("getCompactAdapters", (err, adapters) => {
 					if (timeout.elapsed) return;
@@ -1088,6 +1118,7 @@ export class AdminConnection extends Connection<
 		return this.request({
 			cacheKey: "compactInstances",
 			forceUpdate: update,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("getCompactInstances", (err, instances) => {
 					if (timeout.elapsed) return;
@@ -1112,6 +1143,7 @@ export class AdminConnection extends Connection<
 			cacheKey: `installedCompact_${host}`,
 			forceUpdate: update,
 			commandTimeout: cmdTimeout,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("getCompactInstalled", host, (data) => {
 					if (timeout.elapsed) return;
@@ -1146,6 +1178,7 @@ export class AdminConnection extends Connection<
 			cacheKey: `repositoryCompact_${host}`,
 			forceUpdate: update,
 			commandTimeout: timeoutMs,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("getCompactRepository", host, (data) => {
 					if (timeout.elapsed) return;
@@ -1171,6 +1204,7 @@ export class AdminConnection extends Connection<
 		return this.request({
 			cacheKey: "hostsCompact",
 			forceUpdate: update,
+			requireAdmin: true,
 			executor: (resolve, reject, timeout) => {
 				this._socket.emit("getCompactHosts", (err, systemConfig) => {
 					if (timeout.elapsed) return;

@@ -32,11 +32,8 @@ export const PERMISSION_ERROR = ERRORS.PERMISSION_ERROR;
 /** @deprecated Use {@link ERRORS.NOT_CONNECTED} instead */
 export const NOT_CONNECTED = ERRORS.NOT_CONNECTED;
 
-/**
- * @internal
- * Options to use for the backend request wrapper
- */
-export interface RequestOptions<T> {
+/** Options to use for the backend request wrapper */
+interface RequestOptions<T> {
 	/** The key that is used to cache the results for later requests of the same kind */
 	cacheKey?: string;
 	/** Used to bypass the cache */
@@ -131,14 +128,14 @@ export class Connection<
 	public waitForRestart: boolean = false;
 	public loaded: boolean = false;
 
-	private readonly statesSubscribes: Record<
+	private statesSubscribes: Record<
 		string,
 		{
 			reg: RegExp;
 			cbs: (ioBroker.StateChangeHandler | BinaryStateChangeHandler)[];
 		}
 	> = {};
-	private readonly objectsSubscribes: Record<
+	private objectsSubscribes: Record<
 		string,
 		{ reg: RegExp; cbs: ObjectChangeHandler[] }
 	> = {};
@@ -148,9 +145,8 @@ export class Connection<
 	public acl: any = null;
 	public isSecure: boolean = false;
 
-	private readonly onConnectionHandlers: ((connected: boolean) => void)[] =
-		[];
-	private readonly onLogHandlers: ((message: string) => void)[] = [];
+	public onConnectionHandlers: ((connected: boolean) => void)[] = [];
+	public onLogHandlers: ((message: string) => void)[] = [];
 
 	private onCmdStdoutHandler?: (id: string, text: string) => void;
 	private onCmdStderrHandler?: (id: string, text: string) => void;
@@ -163,10 +159,10 @@ export class Connection<
 	protected _socket!: SocketClient<CustomListenEvents, CustomEmitEvents>;
 
 	private _waitForSocketPromise?: Promise<void>;
-	private readonly _waitForFirstConnectionPromise = createDeferredPromise();
+	private _waitForFirstConnectionPromise = createDeferredPromise();
 
 	/** Cache for server requests */
-	private readonly _promises: Record<string, Promise<any>> = {};
+	private _promises: Record<string, Promise<any>> = {};
 
 	protected _authTimer: any;
 
@@ -307,7 +303,7 @@ export class Connection<
 
 			if (err == undefined) {
 				_err = "";
-			} else if (typeof err.toString === "function") {
+			} else if (typeof err.toString !== "function") {
 				_err = err.toString();
 			} else {
 				_err = JSON.stringify(err);
@@ -357,6 +353,8 @@ export class Connection<
 
 	/**
 	 * Called internally.
+	 * @param isOk
+	 * @param isSecure
 	 */
 	private onPreConnect(isOk: boolean, isSecure: boolean) {
 		if (this._authTimer) {
@@ -392,7 +390,8 @@ export class Connection<
 	}
 
 	/**
-	 * Returns a promise which is resolved when the socket is connected.
+	 * Checks if the socket is connected.
+	 * @returns {Promise<void>} Promise resolves if once connected.
 	 */
 	waitForFirstConnection(): Promise<void> {
 		return this._waitForFirstConnectionPromise;
@@ -420,8 +419,8 @@ export class Connection<
 		const maxAttempts = 10;
 		for (let i = 1; i <= maxAttempts; i++) {
 			this.doLoadData();
-			if (this.loaded) return;
 			await wait(1000);
+			if (this.loaded) return;
 		}
 	}
 
